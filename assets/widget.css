@@ -1,9 +1,9 @@
 /* Widget « Click & Collect » du tableau de bord (Pickup Slot). */
 .pickupslot h3 { margin: 18px 0 8px; font-size: 14px; }
 .pickupslot-apercu { padding: 10px 12px; background: #FAF6EE; border-left: 4px solid #B39555; margin-top: 0; }
-.pickupslot-lieu { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
-.pickupslot-lieu input { flex: 1 1 0; min-width: 0; }
-.pickupslot-lieu-x { font-size: 20px; text-decoration: none; color: #b32d2e; padding: 0 4px; }
+.pickupslot-lieu { position: relative; display: grid; gap: 6px; margin-bottom: 8px; padding: 8px 34px 8px 8px; border: 1px solid #dcdcde; border-radius: 4px; background: #f6f7f7; }
+.pickupslot-lieu input, .pickupslot-lieu textarea { width: 100%; min-width: 0; }
+.pickupslot-lieu-x { position: absolute; top: 6px; right: 6px; font-size: 20px; text-decoration: none; color: #b32d2e; padding: 0 4px; }
 .pickupslot-table { width: 100%; border-collapse: collapse; }
 .pickupslot-table th, .pickupslot-table td { padding: 3px 4px 3px 0; text-align: left; vertical-align: middle; }
 .pickupslot-table thead th { font-weight: 600; font-size: 12px; color: #646970; }

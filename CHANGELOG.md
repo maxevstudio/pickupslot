@@ -4,6 +4,13 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versions [Sem
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-11-26
+
+- Chaque lieu de retrait a une **adresse** et des **horaires d'ouverture**, tous deux facultatifs. L'adresse donne un lien d'itinéraire Google Maps (l'ancien lien Google Maps reste utilisé tant qu'aucune adresse n'est saisie).
+- **Consigne de retrait** facultative (ex. « Munissez-vous de votre numéro de commande… »).
+- **Encart « Retrait de votre commande »** dans les e-mails WooCommerce (HTML et texte seul) et sur la page de confirmation / le détail de commande du compte client : jour, lieu, adresse, itinéraire, horaires, consigne. Sans style propre : il reprend la charte des e-mails WooCommerce. Titre filtrable (`pickupslot_titre_encart`).
+- Au passage de commande, un lieu unique affiche son adresse et le lien « Itinéraire ».
+
 ## [2.0.0] - 2026-11-26
 
 Première version de l'extension (2.x pour la distinguer de l'essai React 1.0.x de juin 2026).

@@ -7,13 +7,17 @@ Le client choisit son jour et son lieu de retrait au passage de commande ; la bo
 ## Ce que fait l'extension
 
 - **Widget « Click & Collect »** (capacité `edit_shop_orders`, filtrable par `pickupslot_capacite`) :
-  lieux de retrait (nom + lien Google Maps), jours où le retrait est possible, délai de préparation selon
+  lieux de retrait (nom, adresse avec lien d'itinéraire Google Maps, horaires d'ouverture, tous facultatifs sauf le nom),
+  une consigne de retrait facultative, jours où le retrait est possible, délai de préparation selon
   le jour de la commande, nombre de jours proposés, heure limite, fermetures exceptionnelles (jour ou période).
   Un aperçu indique le premier jour de retrait pour une commande passée maintenant.
 - **Passage de commande** (formulaire classique, hook `woocommerce_before_order_notes`) : lieu (choisi d'office
   s'il n'y en a qu'un) et jour de retrait, contrôlés à la validation.
 - **Commande** : métas `_pickupslot_date` (AAAA-MM-JJ) et `_pickupslot_location`. Affichage dans le récapitulatif,
   les e-mails, le compte client, la fiche commande (jour modifiable) et une colonne « Retrait » de la liste des commandes.
+- **Encart « Retrait de votre commande »** dans les e-mails WooCommerce (HTML et texte) et sur la page de confirmation :
+  jour, lieu, adresse, itinéraire, horaires, consigne. Sans style propre, il prend la charte des e-mails WooCommerce.
+  Le lieu est retrouvé par son nom : renommer un lieu prive les anciennes commandes de son adresse dans l'encart.
 - Compatible HPOS. Le passage de commande en **blocs** n'est pas pris en charge (il faut le formulaire classique).
 
 ## Reprise depuis le MU-plugin Balicco

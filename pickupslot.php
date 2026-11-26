@@ -3,7 +3,7 @@
  * Plugin Name:       Pickup Slot
  * Plugin URI:        https://github.com/maxevstudio/pickupslot
  * Description:       Click & Collect pour WooCommerce : jour et lieu de retrait au passage de commande (délais de préparation, jours de fermeture, congés), réglés depuis un widget du tableau de bord.
- * Version:           2.0.0
+ * Version:           2.1.0
  * Requires at least: 6.5
  * Requires PHP:      7.4
  * Requires Plugins:  woocommerce
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'PICKUPSLOT_VERSION', '2.0.0' );
+define( 'PICKUPSLOT_VERSION', '2.1.0' );
 define( 'PICKUPSLOT_FILE', __FILE__ );
 define( 'PICKUPSLOT_BASENAME', plugin_basename( __FILE__ ) );
 define( 'PICKUPSLOT_URL', plugin_dir_url( __FILE__ ) );
@@ -51,10 +51,14 @@ function pickupslot_defaut() {
 	return array(
 		'lieux'      => array(
 			array(
-				'nom'  => wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ),
-				'lien' => '',
+				'nom'      => wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ),
+				'adresse'  => '',
+				'horaires' => '',
+				'lien'     => '', // ancien lien Google Maps (MU-plugin), utilisé tant qu'il n'y a pas d'adresse
 			),
 		),
+		// Consigne ajoutée à l'encart de retrait (e-mails, confirmation). Facultative.
+		'consigne'   => '',
 		'ouverts'    => array( 1, 2, 3, 4, 5, 6, 7 ),
 		// Délai de préparation (en jours) selon le jour où la commande est passée.
 		'delais'     => array( 1 => 1, 2 => 1, 3 => 1, 4 => 1, 5 => 1, 6 => 1, 7 => 1 ),
@@ -74,7 +78,11 @@ function pickupslot_reglages() {
 	if ( ! is_array( $r ) ) {
 		$r = get_option( PICKUPSLOT_OPTION_ANCIENNE );
 	}
-	return is_array( $r ) ? wp_parse_args( $r, pickupslot_defaut() ) : pickupslot_defaut();
+	$r = is_array( $r ) ? wp_parse_args( $r, pickupslot_defaut() ) : pickupslot_defaut();
+	foreach ( $r['lieux'] as $i => $l ) {
+		$r['lieux'][ $i ] = wp_parse_args( (array) $l, array( 'nom' => '', 'adresse' => '', 'horaires' => '', 'lien' => '' ) );
+	}
+	return $r;
 }
 
 /** Capacité requise pour modifier les réglages : gérer les commandes. */
@@ -163,6 +171,26 @@ function pickupslot_libelle_fermeture( $f ) {
 function pickupslot_noms_lieux( $r = null ) {
 	$r = $r ? $r : pickupslot_reglages();
 	return wp_list_pluck( $r['lieux'], 'nom' );
+}
+
+/** Lieu enregistré sous ce nom (nom, adresse, horaires, lien), ou null s'il n'existe plus. */
+function pickupslot_lieu( $nom, $r = null ) {
+	$r = $r ? $r : pickupslot_reglages();
+	foreach ( $r['lieux'] as $l ) {
+		if ( $l['nom'] === $nom ) {
+			return $l;
+		}
+	}
+	return null;
+}
+
+/** Lien d'itinéraire Google Maps vers l'adresse du lieu ; à défaut, l'ancien lien Google Maps. */
+function pickupslot_itineraire( $lieu ) {
+	$adresse = trim( preg_replace( '/\s*\n\s*/', ', ', (string) $lieu['adresse'] ) );
+	if ( '' !== $adresse ) {
+		return 'https://www.google.com/maps/dir/?api=1&destination=' . rawurlencode( $adresse );
+	}
+	return (string) $lieu['lien'];
 }
 
 /* =========================================================================

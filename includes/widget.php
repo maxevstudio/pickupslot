@@ -65,13 +65,17 @@ function pickupslot_widget() {
 				<?php foreach ( $r['lieux'] as $i => $l ) : ?>
 					<div class="pickupslot-lieu">
 						<input type="text" name="lieux[<?php echo (int) $i; ?>][nom]" value="<?php echo esc_attr( $l['nom'] ); ?>" placeholder="Nom du point de retrait">
-						<input type="url" name="lieux[<?php echo (int) $i; ?>][lien]" value="<?php echo esc_attr( $l['lien'] ); ?>" placeholder="Lien Google Maps (facultatif)">
+						<textarea name="lieux[<?php echo (int) $i; ?>][adresse]" rows="2" placeholder="Adresse (facultatif) : un lien d'itinéraire Google Maps est créé"><?php echo esc_textarea( $l['adresse'] ); ?></textarea>
+						<textarea name="lieux[<?php echo (int) $i; ?>][horaires]" rows="2" placeholder="Horaires d'ouverture (facultatif)"><?php echo esc_textarea( $l['horaires'] ); ?></textarea>
+						<input type="hidden" name="lieux[<?php echo (int) $i; ?>][lien]" value="<?php echo esc_attr( $l['lien'] ); ?>">
 						<button type="button" class="button-link pickupslot-lieu-x" aria-label="Retirer ce lieu">&times;</button>
 					</div>
 				<?php endforeach; ?>
 			</div>
 			<p><button type="button" class="button" id="pickupslot-lieu-ajouter">Ajouter un lieu</button></p>
-			<p class="description">Avec un seul lieu, il est choisi d'office ; à partir de deux, le client choisit dans une liste.</p>
+			<p class="description">Avec un seul lieu, il est choisi d'office ; à partir de deux, le client choisit dans une liste. L'adresse et les horaires sont repris dans les e-mails de commande et sur la page de confirmation.</p>
+			<p><label for="pickupslot-consigne">Consigne de retrait (facultatif)</label><br>
+				<textarea id="pickupslot-consigne" name="consigne" rows="2" class="widefat" placeholder="Ex. : munissez-vous de votre numéro de commande et d'une pièce d'identité."><?php echo esc_textarea( $r['consigne'] ); ?></textarea></p>
 
 			<h3>Jours de retrait et délais de préparation</h3>
 			<table class="pickupslot-table">
@@ -119,7 +123,8 @@ function pickupslot_widget() {
 	<template id="pickupslot-lieu-modele">
 		<div class="pickupslot-lieu">
 			<input type="text" data-champ="nom" placeholder="Nom du point de retrait">
-			<input type="url" data-champ="lien" placeholder="Lien Google Maps (facultatif)">
+			<textarea data-champ="adresse" rows="2" placeholder="Adresse (facultatif) : un lien d'itinéraire Google Maps est créé"></textarea>
+			<textarea data-champ="horaires" rows="2" placeholder="Horaires d'ouverture (facultatif)"></textarea>
 			<button type="button" class="button-link pickupslot-lieu-x" aria-label="Retirer ce lieu">&times;</button>
 		</div>
 	</template>
@@ -145,14 +150,18 @@ add_action( 'admin_post_pickupslot_enregistrer', function () {
 		$nom = sanitize_text_field( wp_unslash( isset( $l['nom'] ) ? $l['nom'] : '' ) );
 		if ( '' !== $nom ) {
 			$r['lieux'][] = array(
-				'nom'  => $nom,
-				'lien' => esc_url_raw( wp_unslash( isset( $l['lien'] ) ? $l['lien'] : '' ) ),
+				'nom'      => $nom,
+				'adresse'  => sanitize_textarea_field( wp_unslash( isset( $l['adresse'] ) ? $l['adresse'] : '' ) ),
+				'horaires' => sanitize_textarea_field( wp_unslash( isset( $l['horaires'] ) ? $l['horaires'] : '' ) ),
+				'lien'     => esc_url_raw( wp_unslash( isset( $l['lien'] ) ? $l['lien'] : '' ) ),
 			);
 		}
 	}
 	if ( ! $r['lieux'] ) {
 		$r['lieux'] = pickupslot_reglages()['lieux']; // on garde toujours au moins un lieu
 	}
+
+	$r['consigne'] = sanitize_textarea_field( wp_unslash( isset( $_POST['consigne'] ) ? $_POST['consigne'] : '' ) );
 
 	$ouverts      = isset( $_POST['ouverts'] ) ? array_map( 'intval', (array) $_POST['ouverts'] ) : array();
 	$r['ouverts'] = array_values( array_intersect( array_keys( pickupslot_jours() ), $ouverts ) );

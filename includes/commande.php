@@ -34,8 +34,11 @@ add_action( 'woocommerce_before_order_notes', function () {
 	} else {
 		$l = $r['lieux'][0];
 		echo '<p class="form-row form-row-wide pickupslot-lieu-unique"><label>Lieu de retrait</label><strong>' . esc_html( $l['nom'] ) . '</strong>';
-		if ( $l['lien'] ) {
-			echo ' · <a href="' . esc_url( $l['lien'] ) . '" target="_blank" rel="noopener">Voir sur la carte</a>';
+		if ( $l['adresse'] ) {
+			echo '<br>' . nl2br( esc_html( $l['adresse'] ) );
+		}
+		if ( pickupslot_itineraire( $l ) ) {
+			echo '<br><a href="' . esc_url( pickupslot_itineraire( $l ) ) . '" target="_blank" rel="noopener">Itinéraire</a>';
 		}
 		echo '</p>';
 	}
@@ -163,3 +166,84 @@ foreach ( array( 'manage_woocommerce_page_wc-orders_custom_column', 'manage_shop
 		echo $date ? esc_html( wp_date( 'D j M', strtotime( $date . ' 12:00:00' ) ) ) : '—';
 	}, 10, 2 );
 }
+
+/* =========================================================================
+ * Encart « Retrait de votre commande » : e-mails WooCommerce et page de confirmation.
+ * Sans style propre : il reprend la charte des e-mails WooCommerce (titres, couleurs, liens).
+ * ========================================================================= */
+
+/**
+ * @param WC_Order $order
+ * @param bool     $texte Version texte brut (e-mails en texte seul).
+ */
+function pickupslot_encart( $order, $texte = false ) {
+	$date = pickupslot_meta( $order, 'date' );
+	$nom  = pickupslot_meta( $order, 'location' );
+	if ( ! $date && ! $nom ) {
+		return '';
+	}
+	$r     = pickupslot_reglages();
+	$lieu  = $nom ? pickupslot_lieu( $nom, $r ) : null;
+	$jour  = $date ? pickupslot_libelle_long( $date ) . wp_date( ' Y', strtotime( $date . ' 12:00:00' ) ) : '';
+	$lien  = $lieu ? pickupslot_itineraire( $lieu ) : '';
+	$titre = apply_filters( 'pickupslot_titre_encart', 'Retrait de votre commande' );
+
+	if ( $texte ) {
+		$lignes = array( mb_strtoupper( $titre ) );
+		if ( $jour ) {
+			$lignes[] = 'Jour : ' . $jour;
+		}
+		if ( $nom ) {
+			$lignes[] = 'Lieu : ' . $nom;
+		}
+		if ( $lieu && $lieu['adresse'] ) {
+			$lignes[] = $lieu['adresse'];
+		}
+		if ( $lien ) {
+			$lignes[] = 'Itinéraire : ' . $lien;
+		}
+		if ( $lieu && $lieu['horaires'] ) {
+			$lignes[] = "Horaires d'ouverture :\n" . $lieu['horaires'];
+		}
+		if ( $r['consigne'] ) {
+			$lignes[] = $r['consigne'];
+		}
+		return "\n" . implode( "\n", $lignes ) . "\n\n";
+	}
+
+	$html = '<section class="pickupslot-encart" style="margin-bottom:40px">';
+	$html .= '<h2>' . esc_html( $titre ) . '</h2>';
+	if ( $jour ) {
+		$html .= '<p><strong>' . esc_html( $jour ) . '</strong></p>';
+	}
+	if ( $nom ) {
+		$html .= '<p><strong>' . esc_html( $nom ) . '</strong>';
+		if ( $lieu && $lieu['adresse'] ) {
+			$html .= '<br>' . nl2br( esc_html( $lieu['adresse'] ) );
+		}
+		if ( $lien ) {
+			$html .= '<br><a href="' . esc_url( $lien ) . '" target="_blank" rel="noopener">Itinéraire</a>';
+		}
+		$html .= '</p>';
+	}
+	if ( $lieu && $lieu['horaires'] ) {
+		$html .= '<p>Horaires d\'ouverture :<br>' . nl2br( esc_html( $lieu['horaires'] ) ) . '</p>';
+	}
+	if ( $r['consigne'] ) {
+		$html .= '<p>' . nl2br( esc_html( $r['consigne'] ) ) . '</p>';
+	}
+	return $html . '</section>';
+}
+
+add_action( 'woocommerce_email_after_order_table', function ( $order, $sent_to_admin, $plain_text ) {
+	if ( $order instanceof WC_Order ) {
+		echo pickupslot_encart( $order, (bool) $plain_text ); // phpcs:ignore WordPress.Security.EscapeOutput -- échappé dans pickupslot_encart()
+	}
+}, 15, 3 );
+
+// Page de confirmation et détail de la commande dans le compte client.
+add_action( 'woocommerce_order_details_after_order_table', function ( $order ) {
+	if ( $order instanceof WC_Order ) {
+		echo pickupslot_encart( $order ); // phpcs:ignore WordPress.Security.EscapeOutput -- échappé dans pickupslot_encart()
+	}
+} );
