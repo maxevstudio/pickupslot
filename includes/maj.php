@@ -43,8 +43,8 @@ function pickupslot_derniere_release() {
 
 	$reponse = wp_remote_get(
 		'https://github.com/' . pickupslot_depot() . '/releases/latest/download/pickupslot.json',
+		// Pas d'en-tête « Accept: application/json » : github.com répond alors 404 au lieu de rediriger vers le fichier.
 		array(
-			'headers'     => array( 'Accept' => 'application/json' ),
 			'timeout'     => 10,
 			'redirection' => 5,
 		)

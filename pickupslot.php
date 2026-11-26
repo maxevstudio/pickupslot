@@ -3,7 +3,7 @@
  * Plugin Name:       Pickup Slot
  * Plugin URI:        https://github.com/maxevstudio/pickupslot
  * Description:       Click & Collect pour WooCommerce : jour et lieu de retrait au passage de commande (délais de préparation, jours de fermeture, congés), réglés depuis un widget du tableau de bord.
- * Version:           2.1.2
+ * Version:           2.1.3
  * Requires at least: 6.5
  * Requires PHP:      7.4
  * Requires Plugins:  woocommerce
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'PICKUPSLOT_VERSION', '2.1.2' );
+define( 'PICKUPSLOT_VERSION', '2.1.3' );
 define( 'PICKUPSLOT_FILE', __FILE__ );
 define( 'PICKUPSLOT_BASENAME', plugin_basename( __FILE__ ) );
 define( 'PICKUPSLOT_URL', plugin_dir_url( __FILE__ ) );

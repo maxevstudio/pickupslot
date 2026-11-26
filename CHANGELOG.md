@@ -4,6 +4,10 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versions [Sem
 
 ## [Unreleased]
 
+## [2.1.3] - 2026-11-26
+
+- Correctif : la 2.1.2 demandait le manifeste avec l'en-tête « Accept: application/json », auquel github.com répond 404 au lieu de rediriger vers le fichier. Aucune nouvelle version n'était donc vue. Vérifié en local contre la vraie release : une 2.1.1 détecte puis installe la 2.1.2.
+
 ## [2.1.2] - 2026-11-26
 
 - Les mises à jour ne passent plus par l'API GitHub : sur un hébergement mutualisé, l'adresse IP partagée épuise son quota de 60 appels par heure (403 constaté sur balicco.fr), et aucune mise à jour n'apparaissait. Chaque release porte désormais un manifeste `pickupslot.json`, lu sur github.com.

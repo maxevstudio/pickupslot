@@ -3,7 +3,7 @@ Contributors: maxev
 Requires at least: 6.5
 Requires PHP: 7.4
 Requires Plugins: woocommerce
-Stable tag: 2.1.2
+Stable tag: 2.1.3
 License: GPL-2.0-or-later
 
 Click & Collect pour WooCommerce : jour et lieu de retrait au passage de commande, réglés depuis un widget du tableau de bord.
@@ -17,6 +17,9 @@ Click & Collect pour WooCommerce : jour et lieu de retrait au passage de command
 * Mises à jour depuis les releases GitHub, avec le bouton natif « Activer / Désactiver les mises à jour auto ».
 
 == Changelog ==
+
+= 2.1.3 =
+* Correctif : la 2.1.2 ne voyait pas les nouvelles versions (github.com refusait la demande).
 
 = 2.1.2 =
 * Mises à jour fiables sur hébergement mutualisé (manifeste de release au lieu de l'API GitHub) ; lien des mises à jour auto toujours affiché.
