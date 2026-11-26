@@ -16,3 +16,11 @@
 .pickupslot-pastille { display: inline-flex; align-items: center; gap: 4px; padding: 4px 6px 4px 12px; border-radius: 30px; background: #FAF6EE; border: 1px solid #E2D3B0; color: #4A3B1A; font-size: 13px; font-weight: 500; line-height: 20px; }
 .pickupslot-pastille-x { border: 0; background: transparent; color: inherit; font-size: 16px; line-height: 1; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; padding: 0; }
 .pickupslot-pastille-x:hover, .pickupslot-pastille-x:focus { background: #d63638; color: #fff; }
+.pickupslot-horaires summary { cursor: pointer; padding: 2px 0; }
+.pickupslot-horaires table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+.pickupslot-horaires th { width: 1%; text-align: left; font-weight: 500; padding: 4px 8px 4px 0; vertical-align: top; line-height: 30px; }
+.pickupslot-horaires td { display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 4px 0; }
+.pickupslot-plage { display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; }
+.pickupslot-plage + .pickupslot-plage { opacity: .75; }
+.pickupslot-plage:focus-within { opacity: 1; }
+.pickupslot-horaires input[type=time] { width: auto; min-width: 0; }

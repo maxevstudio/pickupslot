@@ -186,6 +186,7 @@ function pickupslot_encart( $order, $texte = false ) {
 	$lieu  = $nom ? pickupslot_lieu( $nom, $r ) : null;
 	$jour  = $date ? pickupslot_libelle_long( $date ) . wp_date( ' Y', strtotime( $date . ' 12:00:00' ) ) : '';
 	$lien  = $lieu ? pickupslot_itineraire( $lieu ) : '';
+	$horaires = $lieu ? pickupslot_horaires_lignes( $lieu['horaires'] ) : array();
 	$titre = apply_filters( 'pickupslot_titre_encart', 'Retrait de votre commande' );
 
 	if ( $texte ) {
@@ -202,8 +203,8 @@ function pickupslot_encart( $order, $texte = false ) {
 		if ( $lien ) {
 			$lignes[] = 'Itinéraire : ' . $lien;
 		}
-		if ( $lieu && $lieu['horaires'] ) {
-			$lignes[] = "Horaires d'ouverture :\n" . $lieu['horaires'];
+		if ( $horaires ) {
+			$lignes[] = "Horaires d'ouverture :\n" . implode( "\n", $horaires );
 		}
 		if ( $r['consigne'] ) {
 			$lignes[] = $r['consigne'];
@@ -226,8 +227,8 @@ function pickupslot_encart( $order, $texte = false ) {
 		}
 		$html .= '</p>';
 	}
-	if ( $lieu && $lieu['horaires'] ) {
-		$html .= '<p>Horaires d\'ouverture :<br>' . nl2br( esc_html( $lieu['horaires'] ) ) . '</p>';
+	if ( $horaires ) {
+		$html .= '<p>Horaires d\'ouverture :<br>' . implode( '<br>', array_map( 'esc_html', $horaires ) ) . '</p>';
 	}
 	if ( $r['consigne'] ) {
 		$html .= '<p>' . nl2br( esc_html( $r['consigne'] ) ) . '</p>';

@@ -53,7 +53,7 @@ function pickupslot_defaut() {
 			array(
 				'nom'      => wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ),
 				'adresse'  => '',
-				'horaires' => '',
+				'horaires' => array(), // [jour 1-7 => [[ 'HH:MM', 'HH:MM' ], …]], jour sans plage = fermé
 				'lien'     => '', // ancien lien Google Maps (MU-plugin), utilisé tant qu'il n'y a pas d'adresse
 			),
 		),
@@ -80,7 +80,8 @@ function pickupslot_reglages() {
 	}
 	$r = is_array( $r ) ? wp_parse_args( $r, pickupslot_defaut() ) : pickupslot_defaut();
 	foreach ( $r['lieux'] as $i => $l ) {
-		$r['lieux'][ $i ] = wp_parse_args( (array) $l, array( 'nom' => '', 'adresse' => '', 'horaires' => '', 'lien' => '' ) );
+		$r['lieux'][ $i ] = wp_parse_args( (array) $l, array( 'nom' => '', 'adresse' => '', 'horaires' => array(), 'lien' => '' ) );
+		$r['lieux'][ $i ]['horaires'] = pickupslot_horaires_propres( $r['lieux'][ $i ]['horaires'] );
 	}
 	return $r;
 }
@@ -182,6 +183,78 @@ function pickupslot_lieu( $nom, $r = null ) {
 		}
 	}
 	return null;
+}
+
+/**
+ * Horaires nettoyés : [jour 1-7 => [[ 'HH:MM', 'HH:MM' ], …]] (2 plages au plus, ouverture avant fermeture).
+ * Tout autre format (texte libre…) donne un tableau vide : pas d'horaires.
+ */
+function pickupslot_horaires_propres( $horaires ) {
+	$propres = array();
+	if ( ! is_array( $horaires ) ) {
+		return $propres;
+	}
+	$heure = '/^([01]\d|2[0-3]):[0-5]\d$/';
+	foreach ( array_keys( pickupslot_jours() ) as $n ) {
+		$plages = isset( $horaires[ $n ] ) && is_array( $horaires[ $n ] ) ? $horaires[ $n ] : array();
+		foreach ( array_slice( array_values( $plages ), 0, 2 ) as $p ) {
+			$de = isset( $p[0] ) ? (string) $p[0] : '';
+			$a  = isset( $p[1] ) ? (string) $p[1] : '';
+			if ( preg_match( $heure, $de ) && preg_match( $heure, $a ) && $de < $a ) {
+				$propres[ $n ][] = array( $de, $a );
+			}
+		}
+	}
+	return $propres;
+}
+
+/** « 08:00 » → « 8 h », « 19:30 » → « 19 h 30 ». */
+function pickupslot_heure( $hhmm ) {
+	list( $h, $m ) = array_map( 'intval', explode( ':', $hhmm ) );
+	return $h . ' h' . ( $m ? ' ' . sprintf( '%02d', $m ) : '' );
+}
+
+/**
+ * Horaires mis en forme, toujours de la même façon, jours identiques consécutifs regroupés :
+ * « Du mardi au samedi : 8 h – 19 h 30 », « Dimanche : 8 h – 13 h », « Lundi : fermé ».
+ *
+ * @return string[] Une ligne par groupe de jours, vide s'il n'y a aucun horaire.
+ */
+function pickupslot_horaires_lignes( $horaires ) {
+	$horaires = pickupslot_horaires_propres( $horaires );
+	if ( ! $horaires ) {
+		return array();
+	}
+	$jours   = pickupslot_jours();
+	$groupes = array();
+	foreach ( $jours as $n => $nom ) {
+		$texte = 'fermé';
+		if ( ! empty( $horaires[ $n ] ) ) {
+			$texte = implode( ' et ', array_map( function ( $p ) {
+				return pickupslot_heure( $p[0] ) . ' – ' . pickupslot_heure( $p[1] );
+			}, $horaires[ $n ] ) );
+		}
+		$dernier = count( $groupes ) - 1;
+		if ( $dernier >= 0 && $groupes[ $dernier ]['texte'] === $texte ) {
+			$groupes[ $dernier ]['fin'] = $n;
+		} else {
+			$groupes[] = array( 'debut' => $n, 'fin' => $n, 'texte' => $texte );
+		}
+	}
+	$lignes = array();
+	foreach ( $groupes as $g ) {
+		$debut = $jours[ $g['debut'] ];
+		$fin   = mb_strtolower( $jours[ $g['fin'] ] );
+		if ( $g['debut'] === $g['fin'] ) {
+			$libelle = $debut;
+		} elseif ( $g['fin'] - $g['debut'] === 1 ) {
+			$libelle = $debut . ' et ' . $fin;
+		} else {
+			$libelle = 'Du ' . mb_strtolower( $debut ) . ' au ' . $fin;
+		}
+		$lignes[] = $libelle . ' : ' . $g['texte'];
+	}
+	return $lignes;
 }
 
 /** Lien d'itinéraire Google Maps vers l'adresse du lieu ; à défaut, l'ancien lien Google Maps. */

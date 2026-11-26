@@ -66,7 +66,7 @@ function pickupslot_widget() {
 					<div class="pickupslot-lieu">
 						<input type="text" name="lieux[<?php echo (int) $i; ?>][nom]" value="<?php echo esc_attr( $l['nom'] ); ?>" placeholder="Nom du point de retrait">
 						<textarea name="lieux[<?php echo (int) $i; ?>][adresse]" rows="2" placeholder="Adresse (facultatif) : un lien d'itinéraire Google Maps est créé"><?php echo esc_textarea( $l['adresse'] ); ?></textarea>
-						<textarea name="lieux[<?php echo (int) $i; ?>][horaires]" rows="2" placeholder="Horaires d'ouverture (facultatif)"><?php echo esc_textarea( $l['horaires'] ); ?></textarea>
+						<?php pickupslot_champs_horaires( $i, $l['horaires'] ); ?>
 						<input type="hidden" name="lieux[<?php echo (int) $i; ?>][lien]" value="<?php echo esc_attr( $l['lien'] ); ?>">
 						<button type="button" class="button-link pickupslot-lieu-x" aria-label="Retirer ce lieu">&times;</button>
 					</div>
@@ -124,10 +124,43 @@ function pickupslot_widget() {
 		<div class="pickupslot-lieu">
 			<input type="text" data-champ="nom" placeholder="Nom du point de retrait">
 			<textarea data-champ="adresse" rows="2" placeholder="Adresse (facultatif) : un lien d'itinéraire Google Maps est créé"></textarea>
-			<textarea data-champ="horaires" rows="2" placeholder="Horaires d'ouverture (facultatif)"></textarea>
+			<?php pickupslot_champs_horaires( null, array() ); ?>
 			<button type="button" class="button-link pickupslot-lieu-x" aria-label="Retirer ce lieu">&times;</button>
 		</div>
 	</template>
+	<?php
+}
+
+/**
+ * Grille des horaires d'un lieu : une ligne par jour, deux plages au plus (la seconde pour la pause de midi).
+ * $i = null : modèle JavaScript (attributs data-champ au lieu de name).
+ */
+function pickupslot_champs_horaires( $i, $horaires ) {
+	$horaires = pickupslot_horaires_propres( $horaires );
+	$attr     = function ( $champ ) use ( $i ) {
+		return null === $i
+			? 'data-champ="' . esc_attr( $champ ) . '"'
+			: 'name="lieux[' . (int) $i . '][' . esc_attr( $champ ) . ']"';
+	};
+	?>
+	<details class="pickupslot-horaires">
+		<summary>Horaires d'ouverture <span class="description">(facultatif)</span></summary>
+		<table>
+			<?php foreach ( pickupslot_jours() as $n => $nom ) : ?>
+				<tr>
+					<th scope="row"><?php echo esc_html( $nom ); ?></th>
+					<td>
+						<?php for ( $p = 0; $p < 2; $p++ ) : $plage = isset( $horaires[ $n ][ $p ] ) ? $horaires[ $n ][ $p ] : array( '', '' ); ?>
+							<span class="pickupslot-plage">
+								<input type="time" <?php echo $attr( "horaires][$n][$p][0" ); ?> value="<?php echo esc_attr( $plage[0] ); ?>" aria-label="<?php echo esc_attr( $nom . ', ouverture' ); ?>">–<input type="time" <?php echo $attr( "horaires][$n][$p][1" ); ?> value="<?php echo esc_attr( $plage[1] ); ?>" aria-label="<?php echo esc_attr( $nom . ', fermeture' ); ?>">
+							</span>
+						<?php endfor; ?>
+					</td>
+				</tr>
+			<?php endforeach; ?>
+		</table>
+		<p class="description">Un jour laissé vide est affiché « fermé ». Seconde plage facultative : après la pause de midi. Sans aucun horaire, rien n'est affiché au client.</p>
+	</details>
 	<?php
 }
 
@@ -152,7 +185,7 @@ add_action( 'admin_post_pickupslot_enregistrer', function () {
 			$r['lieux'][] = array(
 				'nom'      => $nom,
 				'adresse'  => sanitize_textarea_field( wp_unslash( isset( $l['adresse'] ) ? $l['adresse'] : '' ) ),
-				'horaires' => sanitize_textarea_field( wp_unslash( isset( $l['horaires'] ) ? $l['horaires'] : '' ) ),
+				'horaires' => pickupslot_horaires_propres( isset( $l['horaires'] ) ? wp_unslash( $l['horaires'] ) : array() ),
 				'lien'     => esc_url_raw( wp_unslash( isset( $l['lien'] ) ? $l['lien'] : '' ) ),
 			);
 		}

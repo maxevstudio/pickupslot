@@ -7,7 +7,7 @@ Le client choisit son jour et son lieu de retrait au passage de commande ; la bo
 ## Ce que fait l'extension
 
 - **Widget « Click & Collect »** (capacité `edit_shop_orders`, filtrable par `pickupslot_capacite`) :
-  lieux de retrait (nom, adresse avec lien d'itinéraire Google Maps, horaires d'ouverture, tous facultatifs sauf le nom),
+  lieux de retrait (nom, adresse avec lien d'itinéraire Google Maps, horaires d'ouverture saisis jour par jour avec deux plages au plus, tous facultatifs sauf le nom),
   une consigne de retrait facultative, jours où le retrait est possible, délai de préparation selon
   le jour de la commande, nombre de jours proposés, heure limite, fermetures exceptionnelles (jour ou période).
   Un aperçu indique le premier jour de retrait pour une commande passée maintenant.
