@@ -4,6 +4,11 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versions [Sem
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-11-26
+
+- Mises à jour alignées sur Onside : la nouvelle release apparaît dans le quart d'heure (cache 15 min, réponse injectée à chaque lecture de la liste des mises à jour, cache vidé par « Vérifier à nouveau »).
+- Les mises à jour auto ne sont plus forcées : activées une seule fois à la première installation, puis le lien natif « Activer / Désactiver les mises à jour auto » de l'écran Extensions fait foi. Le filtre `pickupslot_auto_update` est retiré.
+
 ## [2.1.0] - 2026-11-26
 
 - Chaque lieu de retrait a une **adresse** et des **horaires d'ouverture**, tous deux facultatifs. L'adresse donne un lien d'itinéraire Google Maps (l'ancien lien Google Maps reste utilisé tant qu'aucune adresse n'est saisie).

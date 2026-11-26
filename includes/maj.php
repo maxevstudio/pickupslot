@@ -6,6 +6,10 @@
  * pour cette extension et appelle le filtre natif `update_plugins_github.com`.
  * Aucun jeton : seule l'API publique des releases est lue (le dépôt doit donc être public).
  * La release doit porter un ZIP dont le dossier racine est `pickupslot/` (voir bin/package.sh).
+ *
+ * Tout passe par le système natif, comme pour Onside : bandeau « nouvelle version disponible »,
+ * bouton « Mettre à jour maintenant », lien « Activer / Désactiver les mises à jour auto ».
+ * Les mises à jour auto sont activées une seule fois, à la première installation ; l'admin du site garde ensuite la main.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -14,13 +18,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 const PICKUPSLOT_MAJ_CACHE = 'pickupslot_github_release';
 
+/** Option posée après la première activation des mises à jour auto (on ne la force qu'une fois). */
+const PICKUPSLOT_MAJ_AUTO_INIT = 'pickupslot_auto_update_init';
+
 /** Dépôt GitHub `compte/depot` interrogé. */
 function pickupslot_depot() {
 	return (string) apply_filters( 'pickupslot_github_repo', 'maxevstudio/pickupslot' );
 }
 
 /**
- * Dernière release publiée, en cache 6 h (1 h en cas d'échec).
+ * Dernière release publiée, en cache 15 min (1 h en cas d'échec). Court, car WordPress espace déjà
+ * ses propres contrôles ; l'API GitHub sans jeton accepte 60 appels par heure et par serveur.
  *
  * @return array|null { version, package, url, body }
  */
@@ -65,7 +73,7 @@ function pickupslot_derniere_release() {
 		'url'     => isset( $corps['html_url'] ) ? (string) $corps['html_url'] : '',
 		'body'    => isset( $corps['body'] ) ? (string) $corps['body'] : '',
 	);
-	set_transient( PICKUPSLOT_MAJ_CACHE, $release, 6 * HOUR_IN_SECONDS );
+	set_transient( PICKUPSLOT_MAJ_CACHE, $release, 15 * MINUTE_IN_SECONDS );
 	return $release;
 }
 
@@ -109,14 +117,68 @@ add_filter( 'plugins_api', function ( $resultat, $action, $args ) {
 	);
 }, 20, 3 );
 
-// Installe les nouvelles releases sans clic. Désactivable : add_filter( 'pickupslot_auto_update', '__return_false' );
-add_filter( 'auto_update_plugin', function ( $update, $item ) {
-	if ( isset( $item->plugin ) && PICKUPSLOT_BASENAME === $item->plugin ) {
-		return (bool) apply_filters( 'pickupslot_auto_update', true );
-	}
-	return $update;
-}, 10, 2 );
+/** Version installée, relue sur le disque (juste après une mise à jour, la constante est encore l'ancienne). */
+function pickupslot_version_installee() {
+	$v = get_file_data( PICKUPSLOT_FILE, array( 'Version' => 'Version' ) );
+	return ! empty( $v['Version'] ) ? $v['Version'] : PICKUPSLOT_VERSION;
+}
 
-add_action( 'upgrader_process_complete', function () {
+/*
+ * WordPress ne refait son propre contrôle qu'au plus toutes les heures (12 h hors écran Extensions) :
+ * on ajoute notre réponse à chaque lecture de la liste des mises à jour, pour qu'une nouvelle release
+ * apparaisse dans le quart d'heure. Admin, cron et WP-CLI seulement, jamais sur le site public.
+ */
+add_filter( 'site_transient_update_plugins', function ( $transient ) {
+	if ( ! is_object( $transient ) || ! ( is_admin() || wp_doing_cron() || ( defined( 'WP_CLI' ) && WP_CLI ) ) ) {
+		return $transient;
+	}
+	$release = pickupslot_derniere_release();
+	if ( ! $release ) {
+		return $transient;
+	}
+	$item = (object) array(
+		'id'          => 'https://github.com/' . pickupslot_depot(),
+		'slug'        => 'pickupslot',
+		'plugin'      => PICKUPSLOT_BASENAME,
+		'new_version' => $release['version'],
+		'url'         => $release['url'],
+		'package'     => $release['package'],
+		'icons'       => array(),
+		'banners'     => array(),
+		'tested'      => '',
+	);
+	$transient->response  = isset( $transient->response ) ? (array) $transient->response : array();
+	$transient->no_update = isset( $transient->no_update ) ? (array) $transient->no_update : array();
+	if ( version_compare( $release['version'], pickupslot_version_installee(), '>' ) ) {
+		$transient->response[ PICKUPSLOT_BASENAME ] = $item;
+		unset( $transient->no_update[ PICKUPSLOT_BASENAME ] );
+	} else {
+		unset( $transient->response[ PICKUPSLOT_BASENAME ] );
+		$transient->no_update[ PICKUPSLOT_BASENAME ] = $item;
+	}
+	return $transient;
+} );
+
+/*
+ * Active les mises à jour auto une seule fois (comme un clic sur « Activer les mises à jour auto ») ;
+ * ensuite, le choix fait dans l'écran Extensions est respecté.
+ */
+add_action( 'admin_init', function () {
+	if ( get_site_option( PICKUPSLOT_MAJ_AUTO_INIT ) ) {
+		return;
+	}
+	update_site_option( PICKUPSLOT_MAJ_AUTO_INIT, 1 );
+	$auto = (array) get_site_option( 'auto_update_plugins', array() );
+	if ( ! in_array( PICKUPSLOT_BASENAME, $auto, true ) ) {
+		$auto[] = PICKUPSLOT_BASENAME;
+		update_site_option( 'auto_update_plugins', $auto );
+	}
+} );
+
+add_action( 'upgrader_process_complete', 'pickupslot_vider_cache_maj', 10, 0 );
+// « Vérifier à nouveau » (Tableau de bord → Mises à jour) vide le cache de WordPress : on vide le nôtre aussi.
+add_action( 'delete_site_transient_update_plugins', 'pickupslot_vider_cache_maj', 10, 0 );
+
+function pickupslot_vider_cache_maj() {
 	delete_transient( PICKUPSLOT_MAJ_CACHE );
-}, 10, 0 );
+}

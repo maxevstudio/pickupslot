@@ -1,7 +1,7 @@
 # Publier une version
 
-Une release publiée est **installée automatiquement sur tous les sites** qui utilisent l'extension
-(contrôle toutes les 6 h, puis mise à jour automatique de WordPress). Ne taguer qu'une version testée.
+Une release publiée apparaît dans le quart d'heure dans les mises à jour de chaque site, et s'installe toute seule
+sur ceux où les mises à jour auto sont activées (activées par défaut à la première installation). Ne taguer qu'une version testée.
 
 1. Décrire les changements sous `[Unreleased]` dans `CHANGELOG.md`, puis renommer la section avec la version et la date.
 2. Changer la version à trois endroits : en-tête `Version:` et constante `PICKUPSLOT_VERSION` de `pickupslot.php`, `Stable tag` de `readme.txt`.
