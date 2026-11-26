@@ -7,7 +7,8 @@ sur ceux où les mises à jour auto sont activées (activées par défaut à la 
 2. Changer la version à trois endroits : en-tête `Version:` et constante `PICKUPSLOT_VERSION` de `pickupslot.php`, `Stable tag` de `readme.txt`.
 3. Commit `Version X.Y.Z`, tag `vX.Y.Z`, puis `git push origin main --follow-tags`.
 4. Le workflow `.github/workflows/release.yml` vérifie que le tag correspond à la version, contrôle la syntaxe PHP,
-   construit le ZIP (`bin/package.sh`) et le joint à la release GitHub.
+   construit le ZIP et le manifeste `pickupslot.json` (`bin/package.sh`) et les joint à la release GitHub.
+   Les sites lisent le manifeste sur `github.com/…/releases/latest/download/pickupslot.json` (jamais l'API GitHub, limitée à 60 appels/h par IP).
 
 `sh bin/package.sh` construit `dist/pickupslot-X.Y.Z.zip` en local (test, installation manuelle).
 
@@ -18,4 +19,4 @@ Dossier racine `pickupslot/` (c'est lui que WordPress remplace) : `pickupslot.ph
 ## Premier déploiement sur un site
 
 Extensions → Ajouter → Téléverser le ZIP → Activer. Les mises à jour suivantes sont automatiques.
-Le dépôt doit être **public** : le contrôle lit l'API publique des releases, sans jeton.
+Le dépôt doit être **public** : le manifeste et le ZIP sont téléchargés sans jeton.

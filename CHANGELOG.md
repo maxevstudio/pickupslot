@@ -4,6 +4,11 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versions [Sem
 
 ## [Unreleased]
 
+## [2.1.2] - 2026-11-26
+
+- Les mises à jour ne passent plus par l'API GitHub : sur un hébergement mutualisé, l'adresse IP partagée épuise son quota de 60 appels par heure (403 constaté sur balicco.fr), et aucune mise à jour n'apparaissait. Chaque release porte désormais un manifeste `pickupslot.json`, lu sur github.com.
+- Le lien « Activer / Désactiver les mises à jour auto » s'affiche toujours, même si le contrôle de version échoue.
+
 ## [2.1.1] - 2026-11-26
 
 - Mises à jour alignées sur Onside : la nouvelle release apparaît dans le quart d'heure (cache 15 min, réponse injectée à chaque lecture de la liste des mises à jour, cache vidé par « Vérifier à nouveau »).

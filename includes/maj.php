@@ -1,11 +1,15 @@
 <?php
 /**
- * Mises à jour automatiques depuis les releases GitHub (même mécanisme que Page Lock Manager).
+ * Mises à jour depuis les releases GitHub.
  *
  * L'en-tête `Update URI` pointe vers github.com : WordPress ne consulte jamais wordpress.org
  * pour cette extension et appelle le filtre natif `update_plugins_github.com`.
- * Aucun jeton : seule l'API publique des releases est lue (le dépôt doit donc être public).
- * La release doit porter un ZIP dont le dossier racine est `pickupslot/` (voir bin/package.sh).
+ *
+ * La dernière version est décrite par le manifeste `pickupslot.json` joint à chaque release
+ * (version, package, url, changelog), lu sur github.com/…/releases/latest/download/.
+ * Surtout pas l'API api.github.com : sans jeton, elle n'accepte que 60 appels par heure et par adresse IP,
+ * et sur un hébergement mutualisé (one.com) l'adresse est partagée avec d'autres sites qui épuisent ce quota
+ * (réponse 403 constatée sur balicco.fr le 2026-11-26 : aucune mise à jour n'apparaissait).
  *
  * Tout passe par le système natif, comme pour Onside : bandeau « nouvelle version disponible »,
  * bouton « Mettre à jour maintenant », lien « Activer / Désactiver les mises à jour auto ».
@@ -16,19 +20,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-const PICKUPSLOT_MAJ_CACHE = 'pickupslot_github_release';
+const PICKUPSLOT_MAJ_CACHE = 'pickupslot_release';
 
 /** Option posée après la première activation des mises à jour auto (on ne la force qu'une fois). */
 const PICKUPSLOT_MAJ_AUTO_INIT = 'pickupslot_auto_update_init';
 
-/** Dépôt GitHub `compte/depot` interrogé. */
+/** Dépôt GitHub `compte/depot`. */
 function pickupslot_depot() {
 	return (string) apply_filters( 'pickupslot_github_repo', 'maxevstudio/pickupslot' );
 }
 
 /**
- * Dernière release publiée, en cache 15 min (1 h en cas d'échec). Court, car WordPress espace déjà
- * ses propres contrôles ; l'API GitHub sans jeton accepte 60 appels par heure et par serveur.
+ * Dernière release publiée, en cache 15 min (30 min en cas d'échec) : WordPress espace déjà ses propres contrôles.
  *
  * @return array|null { version, package, url, body }
  */
@@ -39,39 +42,31 @@ function pickupslot_derniere_release() {
 	}
 
 	$reponse = wp_remote_get(
-		'https://api.github.com/repos/' . pickupslot_depot() . '/releases/latest',
+		'https://github.com/' . pickupslot_depot() . '/releases/latest/download/pickupslot.json',
 		array(
-			'headers' => array(
-				'Accept'     => 'application/vnd.github+json',
-				'User-Agent' => 'Pickup-Slot-Updater',
-			),
-			'timeout' => 10,
+			'headers'     => array( 'Accept' => 'application/json' ),
+			'timeout'     => 10,
+			'redirection' => 5,
 		)
 	);
 	$corps = is_wp_error( $reponse ) || 200 !== wp_remote_retrieve_response_code( $reponse )
-		? array()
-		: (array) json_decode( wp_remote_retrieve_body( $reponse ), true );
+		? null
+		: json_decode( wp_remote_retrieve_body( $reponse ), true );
 
-	// Seul un ZIP joint à la release est installable (le zipball de GitHub a un dossier racine imprévisible).
-	$zip = '';
-	foreach ( isset( $corps['assets'] ) ? (array) $corps['assets'] : array() as $asset ) {
-		$url = isset( $asset['browser_download_url'] ) ? (string) $asset['browser_download_url'] : '';
-		if ( '.zip' === substr( $url, -4 ) ) {
-			$zip = $url;
-			break;
-		}
-	}
+	$version = is_array( $corps ) && isset( $corps['version'] ) ? (string) $corps['version'] : '';
+	$package = is_array( $corps ) && isset( $corps['package'] ) ? (string) $corps['package'] : '';
 
-	if ( empty( $corps['tag_name'] ) || '' === $zip ) {
-		set_transient( PICKUPSLOT_MAJ_CACHE, array(), HOUR_IN_SECONDS );
+	// Seul un ZIP de la release, servi en HTTPS depuis github.com, est installable.
+	if ( ! preg_match( '/^\d+\.\d+\.\d+$/', $version ) || 0 !== strpos( $package, 'https://github.com/' ) || '.zip' !== substr( $package, -4 ) ) {
+		set_transient( PICKUPSLOT_MAJ_CACHE, array(), 30 * MINUTE_IN_SECONDS );
 		return null;
 	}
 
 	$release = array(
-		'version' => ltrim( (string) $corps['tag_name'], 'v' ),
-		'package' => $zip,
-		'url'     => isset( $corps['html_url'] ) ? (string) $corps['html_url'] : '',
-		'body'    => isset( $corps['body'] ) ? (string) $corps['body'] : '',
+		'version' => $version,
+		'package' => $package,
+		'url'     => isset( $corps['url'] ) ? (string) $corps['url'] : 'https://github.com/' . pickupslot_depot(),
+		'body'    => isset( $corps['changelog'] ) ? (string) $corps['changelog'] : '',
 	);
 	set_transient( PICKUPSLOT_MAJ_CACHE, $release, 15 * MINUTE_IN_SECONDS );
 	return $release;
@@ -132,9 +127,16 @@ add_filter( 'site_transient_update_plugins', function ( $transient ) {
 	if ( ! is_object( $transient ) || ! ( is_admin() || wp_doing_cron() || ( defined( 'WP_CLI' ) && WP_CLI ) ) ) {
 		return $transient;
 	}
-	$release = pickupslot_derniere_release();
+	// Même si le contrôle échoue, l'extension figure dans la liste : WordPress affiche alors
+	// le lien « Activer / Désactiver les mises à jour auto » (sinon la colonne reste vide).
+	$installee = pickupslot_version_installee();
+	$release   = pickupslot_derniere_release();
 	if ( ! $release ) {
-		return $transient;
+		$release = array(
+			'version' => $installee,
+			'package' => '',
+			'url'     => 'https://github.com/' . pickupslot_depot(),
+		);
 	}
 	$item = (object) array(
 		'id'          => 'https://github.com/' . pickupslot_depot(),
@@ -149,7 +151,7 @@ add_filter( 'site_transient_update_plugins', function ( $transient ) {
 	);
 	$transient->response  = isset( $transient->response ) ? (array) $transient->response : array();
 	$transient->no_update = isset( $transient->no_update ) ? (array) $transient->no_update : array();
-	if ( version_compare( $release['version'], pickupslot_version_installee(), '>' ) ) {
+	if ( $release['package'] && version_compare( $release['version'], $installee, '>' ) ) {
 		$transient->response[ PICKUPSLOT_BASENAME ] = $item;
 		unset( $transient->no_update[ PICKUPSLOT_BASENAME ] );
 	} else {
@@ -181,4 +183,5 @@ add_action( 'delete_site_transient_update_plugins', 'pickupslot_vider_cache_maj'
 
 function pickupslot_vider_cache_maj() {
 	delete_transient( PICKUPSLOT_MAJ_CACHE );
+	delete_transient( 'pickupslot_github_release' ); // cache des versions ≤ 2.1.1 (API GitHub)
 }

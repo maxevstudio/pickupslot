@@ -1,6 +1,6 @@
 name: Release
 
-# Un tag vX.Y.Z poussé → ZIP installable joint à la GitHub Release.
+# Un tag vX.Y.Z poussé → ZIP installable et manifeste pickupslot.json joints à la GitHub Release.
 # Les sites le détectent via includes/maj.php et s'y mettent à jour.
 on:
   push:
@@ -29,5 +29,7 @@ jobs:
 
       - uses: softprops/action-gh-release@v2
         with:
-          files: dist/pickupslot-*.zip
+          files: |
+            dist/pickupslot-*.zip
+            dist/pickupslot.json
           generate_release_notes: true
