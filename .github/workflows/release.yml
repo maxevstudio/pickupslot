@@ -1,0 +1,33 @@
+name: Release
+
+# Un tag vX.Y.Z poussé → ZIP installable joint à la GitHub Release.
+# Les sites le détectent via includes/maj.php et s'y mettent à jour.
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Le tag correspond à la version de l'extension
+        run: |
+          v=$(grep -m1 -E '^\s*\* Version:' pickupslot.php | awk '{print $NF}')
+          c=$(grep -m1 "PICKUPSLOT_VERSION'" pickupslot.php | grep -oE "[0-9]+\.[0-9]+\.[0-9]+")
+          [ "v$v" = "$GITHUB_REF_NAME" ] && [ "$v" = "$c" ] || { echo "Tag $GITHUB_REF_NAME, en-tête $v, constante $c" >&2; exit 1; }
+
+      - name: Syntaxe PHP
+        run: find . -name "*.php" -not -path "./reference/*" -print0 | xargs -0 -n1 php -l
+
+      - name: ZIP
+        run: sh bin/package.sh
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/pickupslot-*.zip
+          generate_release_notes: true

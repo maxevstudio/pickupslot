@@ -1,0 +1,18 @@
+/* Widget « Click & Collect » du tableau de bord (Pickup Slot). */
+.pickupslot h3 { margin: 18px 0 8px; font-size: 14px; }
+.pickupslot-apercu { padding: 10px 12px; background: #FAF6EE; border-left: 4px solid #B39555; margin-top: 0; }
+.pickupslot-lieu { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+.pickupslot-lieu input { flex: 1 1 0; min-width: 0; }
+.pickupslot-lieu-x { font-size: 20px; text-decoration: none; color: #b32d2e; padding: 0 4px; }
+.pickupslot-table { width: 100%; border-collapse: collapse; }
+.pickupslot-table th, .pickupslot-table td { padding: 3px 4px 3px 0; text-align: left; vertical-align: middle; }
+.pickupslot-table thead th { font-weight: 600; font-size: 12px; color: #646970; }
+.pickupslot-table input[type=number], .pickupslot-court { width: 56px; }
+.pickupslot-ajout { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.pickupslot-ajout input[type=date] { width: 140px; }
+.pickupslot-ajout input[type=text] { flex: 1 1 140px; }
+.pickupslot-pastilles { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 4px; min-height: 30px; }
+.pickupslot-pastilles:not(:has(.pickupslot-pastille))::before { content: attr(data-vide); color: #646970; font-style: italic; line-height: 30px; }
+.pickupslot-pastille { display: inline-flex; align-items: center; gap: 4px; padding: 4px 6px 4px 12px; border-radius: 30px; background: #FAF6EE; border: 1px solid #E2D3B0; color: #4A3B1A; font-size: 13px; font-weight: 500; line-height: 20px; }
+.pickupslot-pastille-x { border: 0; background: transparent; color: inherit; font-size: 16px; line-height: 1; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; padding: 0; }
+.pickupslot-pastille-x:hover, .pickupslot-pastille-x:focus { background: #d63638; color: #fff; }
